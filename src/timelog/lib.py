@@ -1,4 +1,5 @@
 import fileinput
+import os
 from re import compile
 from django.conf import settings
 
@@ -15,23 +16,23 @@ IGNORE_PATHS = getattr(settings, 'TIMELOG_IGNORE_URIS', ())
 
 def count_lines_in(filename):
     "Count lines in a file"
-    f = open(filename)                  
+    f = open(filename)
     lines = 0
     buf_size = 1024 * 1024
     read_f = f.read # loop optimization
-    
+
     buf = read_f(buf_size)
     while buf:
         lines += buf.count('\n')
         buf = read_f(buf_size)
-    
+
     return lines
 
 def view_name_from(path):
     "Resolve a path to the full python module name of the related view function"
     try:
         return CACHED_VIEWS[path]
-        
+
     except KeyError:
         view = resolve(path)
         module = path
@@ -40,7 +41,7 @@ def view_name_from(path):
             module = resolve(path).func.__module__
         if hasattr(view.func, '__name__'):
             name = resolve(path).func.__name__
-        
+
         view =  "%s.%s" % (module, name)
         CACHED_VIEWS[path] = view
         return view
@@ -48,7 +49,7 @@ def view_name_from(path):
 def generate_table_from(data):
     "Output a nicely formatted ascii table"
     table = Texttable(max_width=120)
-    table.add_row(["view", "method", "status", "count", "minimum", "maximum", "mean", "stdev", "queries", "querytime"]) 
+    table.add_row(["view", "method", "status", "count", "minimum", "maximum", "mean", "stdev", "queries", "querytime"])
     table.set_cols_align(["l", "l", "l", "r", "r", "r", "r", "r", "r", "r"])
 
     for item in sorted(data):
@@ -56,7 +57,7 @@ def generate_table_from(data):
 
         mean_sql = round(sum(data[item]['sql'])/data[item]['count'], 3)
         mean_sqltime = round(sum(data[item]['sqltime'])/data[item]['count'], 3)
-        
+
         sdsq = sum([(i - mean) ** 2 for i in data[item]['times']])
         try:
             stdev = '%.2f' % ((sdsq / (len(data[item]['times']) - 1)) ** .5)
@@ -75,15 +76,19 @@ def analyze_log_file(logfile, pattern, reverse_paths=True, progress=True):
         lines = count_lines_in(logfile)
         pbar = ProgressBar(widgets=[Percentage(), Bar()], maxval=lines+1).start()
         counter = 0
-    
+
     data = {}
-    
+
+    # if it doesn't exist, touch it so it'll be there next time
+    if not os.path.exists(logfile):
+        open(logfile,'w').write('')
+
     compiled_pattern = compile(pattern)
     for line in fileinput.input([logfile]):
-        
+
         if progress:
             counter = counter + 1
-        
+
         parsed = compiled_pattern.findall(line)[0]
         date = parsed[0]
         method = parsed[1]
@@ -122,11 +127,11 @@ def analyze_log_file(logfile, pattern, reverse_paths=True, progress=True):
                     }
         except Resolver404:
             pass
-        
+
         if progress:
             pbar.update(counter)
-    
+
     if progress:
         pbar.finish()
-    
+
     return data
