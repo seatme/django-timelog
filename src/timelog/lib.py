@@ -14,6 +14,33 @@ CACHED_VIEWS = {}
 
 IGNORE_PATHS = getattr(settings, 'TIMELOG_IGNORE_URIS', ())
 
+def getTerminalWidth():
+
+    import os
+
+    def ioctl_GWINSZ(fd):
+        try:
+            import fcntl, termios, struct
+            cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
+        except:
+            return None
+        return cr
+    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
+    if not cr:
+        try:
+            fd = os.open(os.ctermid(), os.O_RDONLY)
+            cr = ioctl_GWINSZ(fd)
+            os.close(fd)
+        except:
+            pass
+    if not cr:
+        try:
+            cr = (env['LINES'], env['COLUMNS'])
+        except:
+            cr = (25, 80)
+    return int(cr[1])
+
+
 def count_lines_in(filename):
     "Count lines in a file"
     f = open(filename)
@@ -48,7 +75,7 @@ def view_name_from(path):
 
 def generate_table_from(data):
     "Output a nicely formatted ascii table"
-    table = Texttable(max_width=120)
+    table = Texttable(max_width=getTerminalWidth())
     table.add_row(["view", "method", "status", "count", "minimum", "maximum", "mean", "stdev", "queries", "querytime"])
     table.set_cols_align(["l", "l", "l", "r", "r", "r", "r", "r", "r", "r"])
 
