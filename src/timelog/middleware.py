@@ -5,7 +5,6 @@ from django.utils.encoding import smart_str
 
 logger = logging.getLogger(__name__)
 
-
 class TimeLogMiddleware(object):
 
     def process_request(self, request):
@@ -17,15 +16,15 @@ class TimeLogMiddleware(object):
         # and the original traceback will be lost (original exception will be
         # replaced with AttributeError)
 
+        response_time = time.time() - request._start
         sqltime = 0.0
-
         for q in connection.queries:
-            sqltime += float(getattr(q, 'time', 0.0))
+            sqltime += float(q.get('time', 0.0))
 
         if hasattr(request, '_start'):
             d = {
                 'method': request.method,
-                'time': time.time() - request._start,
+                'time': response_time,
                 'code': response.status_code,
                 'url': smart_str(request.path_info),
                 'sql': len(connection.queries),
