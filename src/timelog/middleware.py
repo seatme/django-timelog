@@ -5,6 +5,9 @@ from django.utils.encoding import smart_str
 
 logger = logging.getLogger(__name__)
 
+SPLUNK_LOGFORMAT = 'method="{method}" url="{url}" code="{code}" time="{time:.4f}" sqlcount="{sql}" sqltime="{sqltime:.4f}"'
+TIMELOG_LOGFORMAT = '%(method)s "%(url)s" (%(code)s) %(time).2f (%(sql)dq, %(sqltime).4f)'
+
 class TimeLogMiddleware(object):
 
     def process_request(self, request):
@@ -30,6 +33,5 @@ class TimeLogMiddleware(object):
                 'sql': len(connection.queries),
                 'sqltime': sqltime,
             }
-            msg = '%(method)s "%(url)s" (%(code)s) %(time).2f (%(sql)dq, %(sqltime).4f)' % d
-            logger.info(msg)
+            logger.info(SPLUNK_LOGFORMAT.format(**d))
         return response
