@@ -19,15 +19,13 @@ class TimeLogMiddleware(object):
         # and the original traceback will be lost (original exception will be
         # replaced with AttributeError)
 
-        response_time = time.time() - request._start
         sqltime = 0.0
         for q in connection.queries:
             sqltime += float(q.get('time', 0.0))
-
         if hasattr(request, '_start'):
             d = {
                 'method': request.method,
-                'time': response_time,
+                'time': time.time() - request._start,
                 'code': response.status_code,
                 'url': smart_str(request.path_info),
                 'sql': len(connection.queries),
