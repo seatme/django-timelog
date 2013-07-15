@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "django-timelog",
-    version = "0.4sm1",
+    version = "0.4sm3",
     author = "Gareth Rushgrove",
     author_email = "gareth@morethanseven.net",
     url = "http://github.com/garethr/django-timelog/",
