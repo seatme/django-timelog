@@ -21,7 +21,7 @@ class TimeLogMiddleware(object):
 
         sqltime = 0.0
         for q in connection.queries:
-            sqltime += float(q.get('time', 0.0))
+            sqltime += float(getattr(q, 'time', 0.0))
         if hasattr(request, '_start'):
             d = {
                 'method': request.method,
